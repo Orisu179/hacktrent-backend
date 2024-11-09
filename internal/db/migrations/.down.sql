@@ -1,0 +1,2 @@
+﻿DROP TABLE IF EXISTS animal;
+DROP TABLE IF EXISTS sightings;
