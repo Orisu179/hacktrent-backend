@@ -2,6 +2,8 @@ package models
 
 import (
 	"context"
+	"errors"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -25,28 +27,72 @@ type AnimalModel struct {
 	DB *pgxpool.Pool
 }
 
-func (m *AnimalModel) NewAnimal(name string, province string) (string, error) {
+func (m *AnimalModel) NewAnimal(name string, province string) error {
 	stmt := `INSERT INTO animal (name, province) VALUES ($1, $2)`
-	result, err := m.DB.Exec(context.Background(), stmt)
+	_, err := m.DB.Exec(context.Background(), stmt, name, province)
 	if err != nil {
-		return "error", err
+		return err
 	}
-	return result.String(), nil
+	return nil
 }
 
 func (m *AnimalModel) GetAnimal(id int) (Animal, error) {
-	return Animal{}, nil
+	stmt := `SELECT id, name, province FROM animal WHERE id = $1`
+	var a Animal
+	err := m.DB.QueryRow(context.Background(), stmt, id).Scan(&a.ID, &a.Name, &a.Province)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Animal{}, pgx.ErrNoRows
+		} else {
+			return Animal{}, err
+		}
+	}
+	return a, nil
 }
 
-func (m *AnimalModel) NewSighting(name string, quantity int, latitude float64, longitude float64) (int, error) {
-	return 0, nil
+func (m *AnimalModel) NewSighting(name string, quantity int, latitude float64, longitude float64) error {
+	animalQuery := `SELECT id FROM animal WHERE name = $1`
+	var id int
+	err := m.DB.QueryRow(context.Background(), animalQuery, name).Scan(&id)
+	if err != nil {
+		err := m.NewAnimal(name, "CA")
+		if err != nil {
+			return err
+		}
+	}
+
+	stmt := `INSERT INTO sighting (animal_id, quantity, latitude, longitude, sighting_time) 
+			VALUES ($1, $2, $3, $4, UTC_TIMESTAMP())`
+	_, err = m.DB.Exec(context.Background(), stmt, id, quantity, latitude, longitude)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *AnimalModel) GetSighting(animalId int) ([]Sighting, error) {
-	return []Sighting{}, nil
+	stmt := `SELECT id, animal_id, quantity, latitude, longitude, sighting_time FROM sighting 
+			WHERE animal_id = $1 ORDER BY id DESC`
+	rows, err := m.DB.Query(context.Background(), stmt, animalId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var sighting []Sighting
+	for rows.Next() {
+		var s Sighting
+		err = rows.Scan(&s.ID, &s.AnimalID, &s.Quantity, &s.Latitude, &s.Longitude, &s.SightingTime)
+		if err != nil {
+			return nil, err
+		}
+		sighting = append(sighting, s)
+	}
+
+	return sighting, nil
 }
 
 func (m *AnimalModel) GetAllSighting() ([]Sighting, error) {
+	//stmt := `SELECT * FROM`
 	return []Sighting{}, nil
 }
 
