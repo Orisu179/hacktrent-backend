@@ -4,6 +4,6 @@ RUN apk --update add git
 RUN mkdir /app
 WORKDIR /app
 COPY . /app
+CMD go mod download
 CMD go run ./cmd/web -addr=":4000"
-
-ENTRYPOINT ["top", "-b"]
+EXPOSE 4000

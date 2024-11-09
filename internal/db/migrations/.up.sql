@@ -1,9 +1,7 @@
 ﻿CREATE TABLE IF NOT EXISTS animal (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    scientific_name VARCHAR(100),
+    name VARCHAR(100) UNIQUE NOT NULL,
     province VARCHAR(3),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS sightings (
