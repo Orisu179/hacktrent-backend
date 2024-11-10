@@ -28,7 +28,7 @@ type AnimalModel struct {
 }
 
 func (m *AnimalModel) NewAnimal(name string, province string) error {
-	stmt := `INSERT INTO animal (name, province) VALUES ($1, $2)`
+	stmt := `INSERT INTO animals (name, province) VALUES ($1, $2)`
 	_, err := m.DB.Exec(context.Background(), stmt, name, province)
 	if err != nil {
 		return err
@@ -37,7 +37,7 @@ func (m *AnimalModel) NewAnimal(name string, province string) error {
 }
 
 func (m *AnimalModel) GetAnimal(id int) (Animal, error) {
-	stmt := `SELECT id, name, province FROM animal WHERE id = $1`
+	stmt := `SELECT id, name, province FROM animals WHERE id = $1`
 	var a Animal
 	err := m.DB.QueryRow(context.Background(), stmt, id).Scan(&a.ID, &a.Name, &a.Province)
 	if err != nil {
@@ -51,7 +51,7 @@ func (m *AnimalModel) GetAnimal(id int) (Animal, error) {
 }
 
 func (m *AnimalModel) NewSighting(name string, quantity int, latitude float64, longitude float64) error {
-	animalQuery := `SELECT id FROM animal WHERE name = $1`
+	animalQuery := `SELECT id FROM animals WHERE name = $1`
 	var id int
 	err := m.DB.QueryRow(context.Background(), animalQuery, name).Scan(&id)
 	if err != nil {
@@ -61,7 +61,7 @@ func (m *AnimalModel) NewSighting(name string, quantity int, latitude float64, l
 		}
 	}
 
-	stmt := `INSERT INTO sighting (animal_id, quantity, latitude, longitude, sighting_time) 
+	stmt := `INSERT INTO sightings (animal_id, quantity, latitude, longitude, sighting_time) 
 			VALUES ($1, $2, $3, $4, UTC_TIMESTAMP())`
 	_, err = m.DB.Exec(context.Background(), stmt, id, quantity, latitude, longitude)
 	if err != nil {
@@ -70,10 +70,22 @@ func (m *AnimalModel) NewSighting(name string, quantity int, latitude float64, l
 	return nil
 }
 
-func (m *AnimalModel) GetSighting(animalId int) ([]Sighting, error) {
-	stmt := `SELECT id, animal_id, quantity, latitude, longitude, sighting_time FROM sighting 
-			WHERE animal_id = $1 ORDER BY id DESC`
-	rows, err := m.DB.Query(context.Background(), stmt, animalId)
+func (m *AnimalModel) GetSighting(animalName string) ([]Sighting, error) {
+	stmt := `SELECT 
+    a.id AS animal_id,
+    a.name AS animal_name,
+    s.latitude,
+    s.longitude,
+    s.sighting_time
+	FROM 
+		animals a
+	JOIN 
+		sightings s ON a.id = s.animal_id
+	WHERE 
+		a.name = $1
+	ORDER BY 
+		s.sighting_time DESC;`
+	rows, err := m.DB.Query(context.Background(), stmt, animalName)
 	if err != nil {
 		return nil, err
 	}

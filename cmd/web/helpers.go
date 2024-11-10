@@ -27,7 +27,7 @@ func (app *application) createDb() error {
     province VARCHAR(3));`
 
 	animalSightingTable := `
-	CREATE TABLE IF NOT EXISTS animal_sighting ( 
+	CREATE TABLE IF NOT EXISTS sighting ( 
     id SERIAL PRIMARY KEY,
     animal_id INT NOT NULL,
     latitude NUMERIC(9, 6) NOT NULL,
