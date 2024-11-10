@@ -9,7 +9,8 @@ func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /{$}", app.home)
-	mux.HandleFunc("GET /send/{animal}", app.jsonTest)
+	mux.HandleFunc("GET /animals", app.jsonTest)
+	mux.HandleFunc("POST /animals", app.postAnimal)
 	handler := cors.Default().Handler(mux)
 
 	return handler

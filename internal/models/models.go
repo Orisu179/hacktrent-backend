@@ -92,10 +92,59 @@ func (m *AnimalModel) GetSighting(animalId int) ([]Sighting, error) {
 }
 
 func (m *AnimalModel) GetAllSighting() ([]Sighting, error) {
-	//stmt := `SELECT * FROM`
-	return []Sighting{}, nil
+	stmt := `
+	SELECT 
+		a.id AS animal_id,
+		a.name AS animal_name,
+		s.latitude,
+		s.longitude,
+		s.sighting_time
+	FROM 
+		animals a
+	JOIN 
+		sightings s ON a.id = s.animal_id
+	ORDER BY 
+		s.sighting_time DESC;`
+	rows, err := m.DB.Query(context.Background(), stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var sighting []Sighting
+	for rows.Next() {
+		var s Sighting
+		err = rows.Scan(&s.ID, &s.AnimalID, &s.Quantity, &s.Latitude, &s.Longitude, &s.SightingTime)
+		if err != nil {
+			return nil, err
+		}
+		sighting = append(sighting, s)
+	}
+
+	return sighting, nil
 }
 
 func (m *AnimalModel) GetLatestSighting() (Sighting, error) {
-	return Sighting{}, nil
+	stmt := `SELECT DISTINCT ON (a.id) 
+    a.id AS animal_id,
+    a.name AS animal_name,
+    s.latitude,
+    s.longitude,
+    s.sighting_time
+FROM 
+    animals a
+JOIN 
+    sightings s ON a.id = s.animal_id
+ORDER BY 
+    a.id, s.sighting_time DESC;
+`
+	var s Sighting
+	row, err := m.DB.Query(context.Background(), stmt)
+	if err != nil {
+		return Sighting{}, err
+	}
+	err = row.Scan(&s.ID, &s.AnimalID, &s.Quantity, &s.Latitude, &s.Longitude)
+	if err != nil {
+		return Sighting{}, err
+	}
+	return s, nil
 }
